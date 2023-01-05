@@ -7,9 +7,9 @@ env:
 
 on:
   push:
-    branches: [ master ]
+    branches: [ build_workflow ]
   pull_request:
-    branches: [ master ]
+    branches: [ build_workflow ]
   release:
     types: [ created ]
 
