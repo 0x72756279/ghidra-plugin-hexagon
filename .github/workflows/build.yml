@@ -1,8 +1,12 @@
 name: build artifacts
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
+  push:
+    branches: [ build_workflow ]
+  pull_request:
+    branches: [ build_workflow ]
+  release:
+    types: [ created ]
 
 jobs:
   build_and_publish:
