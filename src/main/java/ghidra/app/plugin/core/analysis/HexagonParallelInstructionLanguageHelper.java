@@ -161,10 +161,4 @@ public class HexagonParallelInstructionLanguageHelper implements ParallelInstruc
 		return ret;
 	}
 
-	@Override
-	public boolean isParallelInstruction(Instruction instruction) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
 }
