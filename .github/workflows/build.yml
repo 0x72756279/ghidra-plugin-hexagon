@@ -1,66 +1,37 @@
-name: Ghidra Hexagon Extension Build
-
-env:
-  ghidra-url: https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.2_build/ghidra_10.1.2_PUBLIC_20220125.zip
-  ghidra-zip-filename: ghidra_10.1.2_PUBLIC.zip
-  ghidra-directory: ghidra_10.1.2_PUBLIC
+name: build artifacts
 
 on:
-  push:
-    branches: [ build_workflow ]
-  pull_request:
-    branches: [ build_workflow ]
-  release:
-    types: [ created ]
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
-  build:
+  build_and_publish:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        ghidra:  ["10.0", "10.0.1", "10.0.2", "10.0.3"]
     steps:
-    - uses: actions/checkout@v2
-
-    - name: Download Ghidra release
-      uses: carlosperate/download-file-action@v1.0.3
-      id: download-ghidra
-      with:
-        file-url: ${{ env.ghidra-url }}
-        file-name: ${{ env.ghidra-zip-filename }}
-
-    - name: Unzip Ghidra
-      uses: TonyBogdanov/zip@1.0
-      with:
-        args: unzip -qq ${{ steps.download-ghidra.outputs.file-path }} -d .
-    - uses: actions/setup-java@v1
-      with:
-        java-version: '11.0.2'
-
-    - name: Build extension
-      uses: eskatos/gradle-command-action@v1
-      with:
-        gradle-version: '7.3'
-        build-root-directory: ${{ github.workspace }}/Ghidra/Processors/Hexagon
-        arguments: '-PGHIDRA_INSTALL_DIR=${{ github.workspace }}/${{ env.ghidra-directory }}'
-
-    - name: Upload built extension
-      uses: actions/upload-artifact@v2
-      with:
-        name: extension
-        path: Ghidra/Processors/Hexagon/dist/*.zip
-
-  release:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'release' }}
-    needs: build
-
-    steps:
-    - name: Download built extension
-      uses: actions/download-artifact@v2
-      with:
-        name: extension
-    - name: Upload extension to release
-      uses: skx/github-action-publish-binaries@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        args: '*.zip'
+      - uses: actions/checkout@v1
+      - uses: actions/setup-java@v1
+        with:
+          java-version: "11"
+          java-package: jdk
+          architecture: x64
+      - uses: er28-0652/setup-ghidra@master
+        with:
+          version: ${{ matrix.ghidra }}
+      - uses: eskatos/gradle-command-action@v1
+        with:
+          gradle-version: 6.9
+          arguments: test -PGHIDRA_INSTALL_DIR=${{ env.GHIDRA_INSTALL_DIR }}
+      - uses: eskatos/gradle-command-action@v1
+        with:
+          gradle-version: 6.9
+          arguments: buildExtension -PGHIDRA_INSTALL_DIR=${{ env.GHIDRA_INSTALL_DIR }}
+      - uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/*ghidra-hexagon.zip
+          tag: "latest"
+          overwrite: true
+          file_glob: true
